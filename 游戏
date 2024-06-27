@@ -24,6 +24,7 @@ public class ww extends JPanel implements ActionListener, KeyListener
 	   private boolean[][] bricks = new boolean[BRICK_ROWS][BRICK_COLUMNS];
 	   private JButton startButton;
 	   private boolean ballMoving = false;  
+	   private Color ballColor; // 用于存储用户选择的球的颜色
 	   private Color[][] brickColors; // 存储砖块颜色的二维数组
 	   private int score = 0;
 	   public ww() 
@@ -38,15 +39,13 @@ public class ww extends JPanel implements ActionListener, KeyListener
 	           }
 	       }
 		   // 初始化砖块颜色数组
-		   brickColors = new Color[BRICK_ROWS][BRICK_COLUMNS];
-	       Random random = new Random();
-	       for (int i = 0; i < BRICK_ROWS; i++) 
-	       {
-	    	   for (int j = 0; j < BRICK_COLUMNS; j++)
-	           {
-	               brickColors[i][j] = getRandomColor(); // 为每个砖块分配颜色并存储
-	           }
-	       }
+	        brickColors = new Color[BRICK_ROWS][BRICK_COLUMNS];
+	        Random random = new Random();
+	        for (int i = 0; i < BRICK_ROWS; i++) {
+	            for (int j = 0; j < BRICK_COLUMNS; j++) {
+	                brickColors[i][j] = getRandomColor(); // 为每个砖块分配颜色并存储
+	            }
+	        }
 	       setPreferredSize(new Dimension(WIDTH, HEIGHT));
 	       setBackground(Color.BLACK);
 	       setFocusable(true);
@@ -54,6 +53,16 @@ public class ww extends JPanel implements ActionListener, KeyListener
 	       // 设置游戏循环的定时器
 	       timer = new Timer(28, this);
 	       timer.start();
+	       
+	    // 创建颜色选择对话框
+	        JColorChooser colorChooser = new JColorChooser();
+	        int result = JOptionPane.showConfirmDialog(this, colorChooser, "选择球的颜色", JOptionPane.OK_CANCEL_OPTION);
+	        if (result == JOptionPane.OK_OPTION) {
+	            ballColor = colorChooser.getColor();
+	        } else {
+	            ballColor = Color.WHITE; // 默认颜色为白色
+	        }
+	        
 	       startButton = new JButton("开始游戏");
 	       startButton.addActionListener(new ActionListener()
 	       {
@@ -175,11 +184,12 @@ public class ww extends JPanel implements ActionListener, KeyListener
 	                       bricks[i][j] = false; // 移除砖块
 	                       ballDeltaY *= -1; // 反转球的方向
 	                       score += 2;
-	                       if (score >= 100) {
+	                       if (score >= 100)
+	                       {
 	                           gameWon = true; // 设置游戏胜利标志
 	                           running = false; // 停止游戏循环
 	                           timer.stop(); 
-	                   }
+	                       }
 	                       break; // 退出内层循环
 	                   }
 	               }
@@ -218,7 +228,7 @@ public class ww extends JPanel implements ActionListener, KeyListener
 	   protected void paintComponent(Graphics g) 
 	   {
 	       super.paintComponent(g);
-	       g.setColor(Color.WHITE);
+	       g.setColor(ballColor);
 	       g.fillOval(ballX, ballY, BALL_SIZE, BALL_SIZE); // 绘制球
 	       g.fillRect(paddleX, HEIGHT - PADDLE_HEIGHT, PADDLE_WIDTH, PADDLE_HEIGHT); // 绘制挡板
 	       Font scoreFont = new Font("Arial", Font.BOLD, 20); // 绘制砖块
@@ -256,7 +266,6 @@ public class ww extends JPanel implements ActionListener, KeyListener
                g.setColor(Color.GREEN);
            	   String successMessage = "Congratulations! You won!";
                g.drawString(successMessage, (WIDTH - g.getFontMetrics().stringWidth(successMessage)) / 2, HEIGHT / 2 - 50);
-               
                g.setFont(new Font("Arial", Font.BOLD, 20));
                g.drawString("Your final score: " + score, (WIDTH - metrics.stringWidth("Your final score: " + score)) / 2, HEIGHT / 2 + 50);
                
