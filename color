@@ -7,7 +7,7 @@ import java.util.Random;
 
 public class ww extends JPanel implements ActionListener, KeyListener
 {
-	 // 游戏参数
+	
 	   private final int WIDTH = 600, HEIGHT = 400;
 	   private final int BRICK_COLUMNS = 10, BRICK_ROWS = 5;
 	   private final int BRICK_WIDTH = WIDTH / BRICK_COLUMNS, BRICK_HEIGHT = 20;
@@ -42,7 +42,7 @@ public class ww extends JPanel implements ActionListener, KeyListener
 	       setFocusable(true);
 	       addKeyListener(this);
 	 
-	       // 设置游戏循环的定时器
+	      
 	       timer = new Timer(6, this);
 	       timer.start();
 	   }
