@@ -25,10 +25,11 @@ public class ww extends JPanel implements ActionListener, KeyListener
 	   private JButton startButton;
 	   private boolean ballMoving = false;  
 	   private Color[][] brickColors; // 存储砖块颜色的二维数组
-	   
+	   private int score = 0;
 	   public ww() 
 	   {
 		   //初始化砖块数组
+		   score = 0; 
 		   for (int i = 0; i < BRICK_ROWS; i++) 
 		   {
 	           for (int j = 0; j < BRICK_COLUMNS; j++) 
@@ -59,11 +60,49 @@ public class ww extends JPanel implements ActionListener, KeyListener
 	           @Override
 	           public void actionPerformed(ActionEvent e) 
 	           {
-	               startGame(); // 当按钮被点击时调用 startGame 方法
+	        	   int selectedSpeed = showSpeedSelectionDialog();
+	               if (selectedSpeed != JOptionPane.CLOSED_OPTION) {
+	                   adjustBallSpeed(selectedSpeed);
+	                   timer.start(); // 用户选择速度后启动游戏循环计时器
+	                   startGame(); // 调整速度后开始游戏
+	               }
 	           }
 	       });
 	       add(startButton); // 将按钮添加到面板上
-	   }   
+	   }
+		// 弹出速度选择对话框
+	    private int showSpeedSelectionDialog() {
+	        String[] options = {"慢", "中等", "快"};
+	        return JOptionPane.showOptionDialog(
+	                null,
+	                "请选择小球速度",
+	                "速度选择",
+	                JOptionPane.DEFAULT_OPTION,
+	                JOptionPane.PLAIN_MESSAGE,
+	                null,
+	                options,
+	                options[0]
+	        );
+	    }
+	    // 根据用户选择调整小球速度
+	    private void adjustBallSpeed(int speedLevel) {
+	        switch (speedLevel) {
+	            case 0: // 慢
+	                ballDeltaX = -2;
+	                ballDeltaY = -2;
+	                break;
+	            case 1: // 中等
+	                ballDeltaX = -3;
+	                ballDeltaY = -3;
+	                break;
+	            case 2: // 快
+	                ballDeltaX = -4;
+	                ballDeltaY = -4;
+	                break;
+	            default:
+	                throw new IllegalArgumentException("Invalid speed level");
+	        }
+	    }
 	   private Random random = new Random(); // 创建一个随机数生成器实例
 		// 绘制彩色砖块
 		   private Color getRandomColor() 
@@ -111,6 +150,17 @@ public class ww extends JPanel implements ActionListener, KeyListener
 	       }
 	   }	   
 	   // 检测球与砖块的碰撞
+	   private void checkScore() {
+		    int brickCount = 0;
+		    for (boolean[] row : bricks) {
+		        for (boolean brick : row) {
+		            if (!brick) {
+		                brickCount++; // 统计被击中的砖块数量
+		            }
+		        }
+		    }
+		    score = brickCount * 2; // 每个砖块得2分
+		}
 	   private void collisionWithBricks() 
 	   {
 	       for (int i = 0; i < BRICK_ROWS; i++) 
@@ -124,6 +174,12 @@ public class ww extends JPanel implements ActionListener, KeyListener
 	                   {
 	                       bricks[i][j] = false; // 移除砖块
 	                       ballDeltaY *= -1; // 反转球的方向
+	                       score += 2;
+	                       if (score >= 100) {
+	                           gameWon = true; // 设置游戏胜利标志
+	                           running = false; // 停止游戏循环
+	                           timer.stop(); 
+	                   }
 	                       break; // 退出内层循环
 	                   }
 	               }
@@ -153,6 +209,8 @@ public class ww extends JPanel implements ActionListener, KeyListener
 	        {
 	            gameWon = true;
 	            running = false;
+	            timer.stop(); // 停止定时器
+	            repaint(); // 刷新界面以显示胜利信息
 	        }
 	   }	   
 	   // 绘制游戏元素
@@ -162,7 +220,14 @@ public class ww extends JPanel implements ActionListener, KeyListener
 	       super.paintComponent(g);
 	       g.setColor(Color.WHITE);
 	       g.fillOval(ballX, ballY, BALL_SIZE, BALL_SIZE); // 绘制球
-	       g.fillRect(paddleX, HEIGHT - PADDLE_HEIGHT, PADDLE_WIDTH, PADDLE_HEIGHT); // 绘制挡板	 
+	       g.fillRect(paddleX, HEIGHT - PADDLE_HEIGHT, PADDLE_WIDTH, PADDLE_HEIGHT); // 绘制挡板
+	       Font scoreFont = new Font("Arial", Font.BOLD, 20); // 绘制砖块
+	       g.setFont(scoreFont);
+	       String scoreText = "Score: " + score;
+	       FontMetrics metrics = g.getFontMetrics();
+	       int textWidth = metrics.stringWidth(scoreText);
+	       g.setColor(Color.WHITE);
+	       g.drawString(scoreText, (WIDTH - textWidth) / 2, HEIGHT - 200);
 	        // 绘制砖块
 	       for (int i = 0; i < BRICK_ROWS; i++) 
 	       {
@@ -188,9 +253,13 @@ public class ww extends JPanel implements ActionListener, KeyListener
            else if (gameWon) 
            {
        	       g.setFont(new Font("Arial", Font.BOLD, 36));
-               g.setColor(Color.RED);
+               g.setColor(Color.GREEN);
            	   String successMessage = "Congratulations! You won!";
                g.drawString(successMessage, (WIDTH - g.getFontMetrics().stringWidth(successMessage)) / 2, HEIGHT / 2 - 50);
+               
+               g.setFont(new Font("Arial", Font.BOLD, 20));
+               g.drawString("Your final score: " + score, (WIDTH - metrics.stringWidth("Your final score: " + score)) / 2, HEIGHT / 2 + 50);
+               
            }
        }
 	   // 键盘事件处理
@@ -227,9 +296,7 @@ public class ww extends JPanel implements ActionListener, KeyListener
 	       ballX = paddleX + PADDLE_WIDTH / 2 - BALL_SIZE / 2;
 	       ballY = HEIGHT - PADDLE_HEIGHT - BALL_SIZE;      
 	       ballMoving = true; // 设置小球移动的标志为true       
-	       // 重置小球的移动速度
-	       ballDeltaX = -2; // 假设小球初始向左移动
-	       ballDeltaY = -2; // 假设小球初始向上移动
+	       // 根据用户选择的speedLevel调整小球的初始速度
 	   }	   
 	   public static void main(String[] args) 
 	   {
