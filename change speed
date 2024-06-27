@@ -1,1 +1,286 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.util.Random;
+
+public class ww extends JPanel implements ActionListener, KeyListener
+{
+	 // 游戏参数
+	   private final int WIDTH = 600, HEIGHT = 400;
+	   private final int BRICK_COLUMNS = 10, BRICK_ROWS = 5;
+	   private final int BRICK_WIDTH = WIDTH / BRICK_COLUMNS, BRICK_HEIGHT = 20;
+	   private Timer timer;
+	   private boolean running = true;
+	   private boolean gameWon = false;
+	   private boolean gameOver = false;
+	   private int ballX = WIDTH / 2, ballY = HEIGHT / 2;
+	   private int paddleX = WIDTH / 2;
+	   private final int BALL_SIZE = 20, PADDLE_WIDTH = 100, PADDLE_HEIGHT = 10;
+	   private int ballDeltaX = -2, ballDeltaY = -2; // 球的移动速度
+	   private boolean[][] bricks = new boolean[BRICK_ROWS][BRICK_COLUMNS];
+	   private JButton startButton;
+	   private boolean ballMoving = false;  
+	   private Color[][] brickColors; // 存储砖块颜色的二维数组
+	   
+	   public ww() 
+	   {
+		   //初始化砖块数组
+		   for (int i = 0; i < BRICK_ROWS; i++) 
+		   {
+	           for (int j = 0; j < BRICK_COLUMNS; j++) 
+	           {
+	               bricks[i][j] = true;
+	           }
+	       }
+		   // 初始化砖块颜色数组
+		   brickColors = new Color[BRICK_ROWS][BRICK_COLUMNS];
+	       Random random = new Random();
+	       for (int i = 0; i < BRICK_ROWS; i++) 
+	       {
+	    	   for (int j = 0; j < BRICK_COLUMNS; j++)
+	           {
+	               brickColors[i][j] = getRandomColor(); // 为每个砖块分配颜色并存储
+	           }
+	       }
+	       setPreferredSize(new Dimension(WIDTH, HEIGHT));
+	       setBackground(Color.BLACK);
+	       setFocusable(true);
+	       addKeyListener(this);
+	 
+	       // 设置游戏循环的定时器
+	       timer = new Timer(28, this);
+	       timer.start();
+	       startButton = new JButton("开始游戏");
+	       startButton.addActionListener(new ActionListener()
+	       {
+	    	   @Override
+	           public void actionPerformed(ActionEvent e) {
+	               int selectedSpeed = showSpeedSelectionDialog();
+	               if (selectedSpeed != JOptionPane.CLOSED_OPTION) {
+	                   adjustBallSpeed(selectedSpeed);
+	                   timer.start(); // 用户选择速度后启动游戏循环计时器
+	                   startGame(); // 调整速度后开始游戏
+	               }
+	           }
+	       });
+	       
+	       add(startButton); // 将按钮添加到面板上
+	   }   
+	   
+	// 弹出速度选择对话框
+	    private int showSpeedSelectionDialog() {
+	        String[] options = {"慢", "中等", "快"};
+	        return JOptionPane.showOptionDialog(
+	                null,
+	                "请选择小球速度",
+	                "速度选择",
+	                JOptionPane.DEFAULT_OPTION,
+	                JOptionPane.PLAIN_MESSAGE,
+	                null,
+	                options,
+	                options[0]
+	        );
+	    }
+	    
+
+	    // 根据用户选择调整小球速度
+	    private void adjustBallSpeed(int speedLevel) {
+	        switch (speedLevel) {
+	            case 0: // 慢
+	                ballDeltaX = -2;
+	                ballDeltaY = -2;
+	                break;
+	            case 1: // 中等
+	                ballDeltaX = -4;
+	                ballDeltaY = -4;
+	                break;
+	            case 2: // 快
+	                ballDeltaX = -7;
+	                ballDeltaY = -7;
+	                break;
+	            default:
+	                throw new IllegalArgumentException("Invalid speed level");
+	        }
+	    }
+
+	   private Random random = new Random(); // 创建一个随机数生成器实例
+		// 绘制彩色砖块
+		   private Color getRandomColor() 
+		   {
+		       // 生成随机颜色
+		       return new Color(random.nextInt(256), random.nextInt(256), random.nextInt(256));
+		   }	 
+	   // 游戏主循环
+	   public void actionPerformed(ActionEvent e) 
+	   {
+	       if (running && !gameOver && !gameWon) 
+	       {
+	           ballX += ballDeltaX;
+	           ballY += ballDeltaY; 
+	           if (ballMoving) 
+	           {
+	               // 移动小球
+	               ballX += ballDeltaX;
+	               ballY += ballDeltaY;
+	              // 检测墙壁碰撞
+	               if (ballX < 0 || ballX > WIDTH - BALL_SIZE) 
+	               {
+	            	   ballDeltaX *= -1;
+	               }
+	               if (ballY < 0) 
+	               {
+	            	   ballDeltaY *= -1;
+	               }
+	               // 检测挡板碰撞
+	              if (ballY > HEIGHT - PADDLE_HEIGHT - BALL_SIZE) 
+	              {
+	            	  if (ballX > paddleX && ballX < paddleX + PADDLE_WIDTH) 
+	            	  {
+	            		  ballDeltaY *= -1;
+	                  }	               
+	                  else 
+	                 {
+	                	  gameOver = true;
+	                 }	               
+	              }	           
+	              // 检测砖块碰撞
+	             collisionWithBricks();
+	           }	           
+	         repaint();
+	       }
+	   }	   
+	   // 检测球与砖块的碰撞
+	   private void collisionWithBricks() 
+	   {
+	       for (int i = 0; i < BRICK_ROWS; i++) 
+	       {
+	           for (int j = 0; j < BRICK_COLUMNS; j++) 
+	           {
+	               if (bricks[i][j]) 
+	               {
+	                   if (ballX > j * BRICK_WIDTH && ballX < j * BRICK_WIDTH + BRICK_WIDTH &&
+	                       ballY > i * BRICK_HEIGHT && ballY < i * BRICK_HEIGHT + BRICK_HEIGHT) 
+	                   {
+	                       bricks[i][j] = false; // 移除砖块
+	                       ballDeltaY *= -1; // 反转球的方向
+	                       break; // 退出内层循环
+	                   }
+	               }
+	           }
+	       }
+	   }	   
+	   // 检查是否所有砖块都消失
+	   private void checkBricks() 
+	   {
+	        boolean allDestroyed = true;
+	        for (int i = 0; i < BRICK_ROWS; i++) 
+	        {
+	            for (int j = 0; j < BRICK_COLUMNS; j++) 
+	            {
+	                if (bricks[i][j]) 
+	                {
+	                    allDestroyed = false;
+	                    break;
+	                }
+	            }
+	            if (!allDestroyed) 
+	            {
+	                break;
+	            }
+	        }	        
+	        if (allDestroyed) 
+	        {
+	            gameWon = true;
+	            running = false;
+	        }
+	   }	   
+	   // 绘制游戏元素
+	   @Override
+	   protected void paintComponent(Graphics g) 
+	   {
+	       super.paintComponent(g);
+	       g.setColor(Color.WHITE);
+	       g.fillOval(ballX, ballY, BALL_SIZE, BALL_SIZE); // 绘制球
+	       g.fillRect(paddleX, HEIGHT - PADDLE_HEIGHT, PADDLE_WIDTH, PADDLE_HEIGHT); // 绘制挡板	 
+	        // 绘制砖块
+	       for (int i = 0; i < BRICK_ROWS; i++) 
+	       {
+	    	   for (int j = 0; j < BRICK_COLUMNS; j++) 
+	    	   {
+	    		   if (bricks[i][j]) 
+	    		   {
+	    			   g.setColor(brickColors[i][j]); // 从之前生成的颜色数组中获取颜色
+	    			   g.fillRect(j * BRICK_WIDTH, i * BRICK_HEIGHT, BRICK_WIDTH, BRICK_HEIGHT);
+                   }
+               }
+           }     
+            // 绘制游戏结束或胜利信息
+	       g.setFont(new Font("Arial", Font.BOLD, 30));
+           g.setColor(Color.WHITE);
+           if (gameOver) 
+           {
+        	   g.setFont(new Font("Arial", Font.BOLD, 36));
+               g.setColor(Color.RED);
+               String message = "Game Over";
+               g.drawString(message, (WIDTH - g.getFontMetrics().stringWidth(message)) / 2, HEIGHT / 2 - 50);
+           } 
+           else if (gameWon) 
+           {
+       	       g.setFont(new Font("Arial", Font.BOLD, 36));
+               g.setColor(Color.RED);
+           	   String successMessage = "Congratulations! You won!";
+               g.drawString(successMessage, (WIDTH - g.getFontMetrics().stringWidth(successMessage)) / 2, HEIGHT / 2 - 50);
+           }
+       }
+	   // 键盘事件处理
+	   @Override
+	   public void keyPressed(KeyEvent e) 
+	   {
+	       if (e.getKeyCode() == KeyEvent.VK_LEFT) 
+	       {
+	           paddleX -= 20;
+	       }
+	       if (e.getKeyCode() == KeyEvent.VK_RIGHT) 
+	       {
+	           paddleX += 20;
+	       }
+	       // 防止挡板移出边界
+	       paddleX = Math.max(paddleX, 0);
+	       paddleX = Math.min(paddleX, WIDTH - PADDLE_WIDTH);
+	   }	   
+	   @Override
+	   public void keyReleased(KeyEvent e) 
+	   {
+		   
+	   } 
+	   @Override
+	   public void keyTyped(KeyEvent e) 
+	   {
+		   
+	   } 
+	   public void startGame() 
+	   {
+	       running = true;// 假设有一个变量 running 控制游戏运行
+	       startButton.setVisible(false);// 游戏开始后隐藏按钮
+	       // 重置小球的位置到挡板处
+	       ballX = paddleX + PADDLE_WIDTH / 2 - BALL_SIZE / 2;
+	       ballY = HEIGHT - PADDLE_HEIGHT - BALL_SIZE;      
+	       ballMoving = true; // 设置小球移动的标志为true       
+	    // 根据用户选择的speedLevel调整小球的初始速度
+	   
+	   }	   
+	   public static void main(String[] args) {
+	        SwingUtilities.invokeLater(() -> {
+	            JFrame frame = new JFrame("打砖块游戏");
+	            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	            ww game = new ww();
+	            frame.getContentPane().add(game);
+	            frame.pack();
+	            frame.setLocationRelativeTo(null);
+	            frame.setVisible(true);
+	        });
+	    }
+	}
 
