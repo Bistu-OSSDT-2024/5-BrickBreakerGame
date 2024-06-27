@@ -27,6 +27,7 @@ public class ww extends JPanel implements ActionListener, KeyListener
 	   private Color ballColor; // 用于存储用户选择的球的颜色
 	   private Color[][] brickColors; // 存储砖块颜色的二维数组
 	   private int score = 0;
+	  
 	   public ww() 
 	   {
 		   //初始化砖块数组
@@ -118,7 +119,7 @@ public class ww extends JPanel implements ActionListener, KeyListener
 		   {
 		       // 生成随机颜色
 		       return new Color(random.nextInt(256), random.nextInt(256), random.nextInt(256));
-		   }	 
+		   }
 	   // 游戏主循环
 	   public void actionPerformed(ActionEvent e) 
 	   {
